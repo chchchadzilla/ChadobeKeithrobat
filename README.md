@@ -395,7 +395,7 @@ For the curious:
 - **Rendering** by pdf.js; **writing** by pdf-lib. Both loaded from cdnjs; everything else is hand-rolled.
 - **The consumption model:** moved/removed text is tracked *on the fill edit that replaced it*, not in a side flag — so undo/redo restores it for free, by construction.
 - **The z-order rule:** fills are background, everything else stacks above, relative order preserved within each class — applied identically in preview, pixel sampling, and export so all three always agree.
-- **Testing:** 90 automated tests across three suites — a pure engine suite, a pixel-verification suite that renders output and reads pixels, and an integration suite that boots the actual shipped file in a DOM harness and drives it through real event paths. Every bug found in the field became a permanent regression test.
+- **Testing:** 116 automated tests across three suites, run with `npm test`. A pure engine suite (90 tests) drives the core directly in Node. A pixel-verification suite (12 tests) exports real PDFs, rasterizes them with poppler, and reads the pixels back, so the writer and the reader can't share a bug. An integration suite (14 tests) boots the actual shipped file in real Chrome and drives it through real mouse and keyboard events — including an assertion that nothing leaves the browser during export. `npm run test:mutate` breaks the app four different ways and fails unless the tests notice each one. The suites read `index.html` itself rather than a copy, so there is no second source of truth to drift. See [`tests/README.md`](tests/README.md).
 
 ---
 
@@ -442,3 +442,12 @@ text editing | move | font matching | watermark removal | fill & sign — *and m
 from the **CHADOBEE CREATIVE!** *(Sweet!)* ❤
 
 </div>
+
+---
+
+## License
+
+Free for personal use, for learning, for embedding the engine in your own software, for
+building your own local-first PDF editor, and for anything else that isn't selling this
+product. If you want to package it up and sell it, come talk to me and we'll work out a
+cut. Plain English, in [`LICENSE.md`](LICENSE.md).
