@@ -1,6 +1,6 @@
 # Tests
 
-Three suites, 116 tests. They run against the shipped `index.html`, not a copy
+Four suites, 136 tests. They run against the shipped `index.html`, not a copy
 of it: the engine and pixel suites pull the core `<script>` out of the real file
 at run time, and the integration suite loads the real file in a real browser.
 
@@ -19,6 +19,15 @@ product is `index.html`.
 | engine | `npm run test:engine` | 90 tests. The pure core, in Node, no DOM. |
 | pixels | `npm run test:pixels` | 12 tests. Renders exports and reads the pixels back. |
 | integration | `npm run test:integration` | 14 tests. The real page in real Chrome. |
+| watermark | `node --test tests/watermark.test.mjs` | 20 tests. Watermark strip (5 kinds + clean), metadata scrub, SRI/CSP boot, Watermark ▾ / Tools ▾ menus. |
+
+### Other browsers and phones
+
+`KEITHROBAT_BROWSER=chromium|firefox|webkit|msedge` picks the engine (webkit = Safari's engine). `KEITHROBAT_DEVICE="iPhone 14"` (or `"Pixel 7"`, `"iPad (gen 7)"`, any Playwright device) emulates a phone or tablet. Example:
+
+```bash
+KEITHROBAT_BROWSER=webkit KEITHROBAT_DEVICE="iPhone 14" npm test
+```
 
 ### engine
 

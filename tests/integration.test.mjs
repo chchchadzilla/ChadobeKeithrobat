@@ -57,7 +57,8 @@ async function selectLine(page, line) {
   await page.mouse.click(pt.x, pt.y);
   await page.waitForFunction(() => {
     const btns = [...document.querySelectorAll('button')].filter((b) => b.textContent.trim() === 'Move');
-    return btns.some((b) => b.getBoundingClientRect().top > 100 && b.getBoundingClientRect().top < 400);
+    // below the toolbar, anywhere in the upper page area (phones put it higher)
+    return btns.some((b) => b.getBoundingClientRect().top > 50 && b.getBoundingClientRect().top < 400);
   }, null, { timeout: 5000 });
 }
 
@@ -156,7 +157,7 @@ test('clicking a line of text selects it and shows the selection actions', async
     await selectLine(page, LINE_A);
     const actions = await page.evaluate(() =>
       [...document.querySelectorAll('button')]
-        .filter((b) => b.getBoundingClientRect().top > 100)
+        .filter((b) => b.getBoundingClientRect().top > 50)
         .map((b) => b.textContent.trim()));
     for (const want of ['Copy', 'Edit', 'Move', 'Highlight', 'Underline', 'Strike']) {
       assert.ok(actions.includes(want), `selection bar is missing "${want}" (got ${actions.join(', ')})`);

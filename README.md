@@ -83,6 +83,8 @@ Pages are **virtualized** — only the ones on screen are rendered — so thousa
 | **Edit text** | `E` | Click any text to rewrite it in place with matched font, size, and color ([§5](#5-editing-text-font-matching)). |
 | **Add text** | `T` | Click anywhere to type new text onto the page. |
 | **Remove** | `R` | Click a text run, or drag over a region, to erase it with a content-aware patch ([§8](#8-removing-content--content-aware-fill)). |
+| **Watermark ▾** | — | **Remove watermark** (one click) or **Add watermark…** ([§15](#15-page-numbers--watermarks)). |
+| **Tools ▾** | — | Image, Highlight, Shapes, Organize, Find, Page numbers. Shortcuts still work. |
 | **Highlight** | `H` | Drag across text to highlight it. |
 | **Shapes** | `S` | Rectangle, ellipse, line, arrow, freehand ink — with a live options popover ([§11](#11-shapes--freehand-drawing)). |
 | **Image** | `I` | Insert a picture (PNG/JPG); drag, resize, rotate, remove its background ([§10](#10-images--background-removal)). |
@@ -310,7 +312,7 @@ Hit **Sign** in the toolbar:
 
 ## 15. Page Numbers & Watermarks
 
-Open **Organize** → **№ Numbers & watermark**:
+**Watermark ▾ → Add watermark…**, **Tools ▾ → Page numbers…**, or **Organize** → **№ Numbers & watermark**:
 
 - **Page numbers:** pick a corner (or bottom-center), a starting number, and a point size. One number per page, right where you asked.
 - **Watermark:** any text (default `DRAFT`), rendered as **real rotated vector text** at 45° across every page, with an opacity slider (5–60%). It's not a pasted picture — it's genuine translucent PDF text.
@@ -318,6 +320,20 @@ Open **Organize** → **№ Numbers & watermark**:
 Both are applied as **ordinary edits**: they preview live on every page, they mark pages with the amber dot, and — because they're one batch — a **single `Ctrl+Z` removes all of them** from every page at once.
 
 *Note:* on pages stored with rotation, stamps follow the page's rotation.
+
+### Remove watermark (one click)
+
+**Watermark ▾ → Remove watermark**, or click *watermark removal* on the splash screen to open a file and strip it on load. It takes the mark out of the PDF itself, not just covers it:
+
+- `/Watermark` annotations, and stamp annotations repeated across pages
+- marked content tagged as a watermark artifact (Word, Acrobat, most office exports)
+- optional-content layers named *watermark / draft / confidential / sample*
+- diagonal text, and translucent text or images repeated on most pages
+- watermarks this app added
+
+`Ctrl+Z` puts the original file back exactly. If nothing is found, it says so.
+
+**No OCR.** A watermark baked into a scanned page image is just pixels. Use **Remove** (`R`), drag over it, and save **Flattened**.
 
 ---
 
@@ -357,13 +373,13 @@ Everything here is undoable, and the rail + amber dots stay in sync.
 | **Standard** | Editable-style output; removed content is *covered* by patches (smaller file, faster). |
 | **Flattened** | Every page rasterized — removals become **unrecoverable**. Use this for true redaction. |
 
-If you've filled form fields, the dialog reminds you they'll be **filled & locked** ([§13](#13-fill--sign--forms)). Every export carries `Producer: Chadobe Keithrobat Pro CK` in its metadata, because branding matters.
+If you've filled form fields, the dialog reminds you they'll be **filled & locked** ([§13](#13-fill--sign--forms)). Every export is **scrubbed**: author, title, creator, dates, XMP and edit history are stripped. The only thing left is `Producer: Chadobe Keithrobat Pro CK`, because branding matters.
 
 ---
 
 ## 19. Sessions, Crash Recovery & Privacy
 
-- **Local only, always.** No account, no server, no telemetry. The status bar says *local only — nothing uploaded* because it's permanently true.
+- **Local only, always.** No account, no server, no telemetry. A Content-Security-Policy blocks the page from connecting anywhere, and all four library files (including the pdf.js worker) are pinned with SRI hashes, so a tampered CDN file refuses to run. The status bar says *local only — nothing uploaded* because it's permanently true.
 - **Crash recovery.** Your document, edits, and form values are checkpointed to your browser's local IndexedDB. Close the tab accidentally or crash — reopen the app and you're offered your session back.
 - **Saved signature** lives in the same local store; it never travels anywhere.
 - Clearing your browser's site data erases all of the above — which is exactly the control you should have.

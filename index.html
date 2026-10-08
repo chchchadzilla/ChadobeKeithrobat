@@ -3,6 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- Lockdown: the only code allowed is this file plus the 3 pinned libraries, and the page cannot
+     open a network connection to anywhere except fetching the pinned pdf.js worker. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; worker-src blob:; connect-src https://cdnjs.cloudflare.com blob: data:; img-src 'self' data: blob:; style-src 'unsafe-inline'; font-src data: blob:; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+<meta name="referrer" content="no-referrer">
 <title>Chadobe Keithrobat — Pro CK</title>
 <meta name="description" content="Edit PDF text with automatic font matching, remove objects with content-aware fill, manage images, organize pages. Free, no account, 100% in your browser.">
 <style>
@@ -118,6 +122,67 @@ input,select,textarea{font-family:inherit;color:inherit}
 #zoomWrap{display:flex;align-items:center;gap:2px}
 #zoomPct{font-family:var(--mono);font-size:12px;color:var(--muted);width:46px;text-align:center}
 
+
+/* toolbar dropdowns */
+.tdd{position:relative;flex:none}
+.tbtn .car{font-size:10px;color:var(--faint);margin-left:-2px;transition:transform .15s}
+.tdd.open .tbtn .car{transform:rotate(180deg);color:var(--text)}
+.tdd.open>.ddbtn,.ddbtn.has-active{background:var(--ink-3);color:var(--text)}
+.ddbtn.has-active{box-shadow:inset 0 -2px 0 var(--teal)}
+.ddbtn.busy{pointer-events:none}
+.ddbtn.busy svg{animation:wmpulse .8s ease-in-out infinite alternate}
+@keyframes wmpulse{from{opacity:1}to{opacity:.25}}
+.ddmenu{display:none;position:fixed;z-index:90;min-width:220px;max-width:min(330px,calc(100vw - 16px));
+  background:linear-gradient(180deg,#1e1e22,#17171a);border:1px solid rgba(255,255,255,.1);border-radius:12px;
+  box-shadow:var(--shadow-pop),0 0 0 1px rgba(224,49,49,.08);padding:6px;flex-direction:column;gap:2px;
+  transform-origin:top left;animation:ddin .14s cubic-bezier(.2,.9,.3,1.2)}
+.tdd.open .ddmenu{display:flex}
+@keyframes ddin{from{opacity:0;transform:translateY(-4px) scale(.98)}to{opacity:1;transform:none}}
+.ddmenu .tbtn{width:100%;justify-content:flex-start;height:38px;border-radius:8px}
+.ddmenu .tbtn .lbl{display:inline!important;flex:1;text-align:left}
+.ddmenu .tbtn .kb{display:inline!important;margin-left:auto}
+.ddmenu .tbtn.tool.active{background:var(--teal);color:#fff}
+.ddmenu .tbtn:focus-visible,.ddi:focus-visible{outline:2px solid var(--teal);outline-offset:-2px}
+.ddsep{height:1px;background:var(--hair);margin:4px 6px}
+.ddi{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;padding:9px 12px;border-radius:8px;color:var(--text)}
+.ddi b{font-size:13px;font-weight:650}
+.ddi small{font-size:11px;color:var(--faint);line-height:1.35}
+.ddi:hover{background:var(--ink-3)}
+#wmRemoveBtn{background:linear-gradient(90deg,rgba(224,49,49,.16),rgba(224,49,49,.04));box-shadow:inset 2px 0 0 var(--teal)}
+#wmRemoveBtn:hover{background:linear-gradient(90deg,rgba(224,49,49,.28),rgba(224,49,49,.08))}
+.ddnote{font-family:var(--mono);font-size:10.5px;line-height:1.5;color:var(--muted);padding:8px 12px 6px;border-top:1px solid var(--hair);margin-top:4px}
+.ddnote b{color:var(--amber);font-weight:600}
+.featgo{font:inherit;letter-spacing:inherit;text-transform:inherit;color:var(--teal);padding:0 14px;border-right:1.5px solid var(--teal);
+  cursor:pointer;transition:color .15s,text-shadow .15s}
+.featgo:hover{color:#fff;text-shadow:0 0 12px rgba(224,49,49,.8)}
+/* doper topbar */
+#topbar{background:linear-gradient(180deg,#1c1c20,#161619);box-shadow:0 1px 0 rgba(255,255,255,.03),0 6px 18px rgba(0,0,0,.25)}
+.tbtn{transition:background .12s,color .12s,box-shadow .12s,transform .08s}
+.tbtn:active:not(:disabled){transform:translateY(1px)}
+.tbtn.tool.active{box-shadow:0 0 0 1px rgba(255,255,255,.08),0 4px 14px rgba(224,49,49,.35)}
+.tbtn.primary{box-shadow:0 4px 14px rgba(224,49,49,.35)}
+.tbtn.primary:hover{box-shadow:0 6px 20px rgba(224,49,49,.5)}
+@media (max-width:860px){
+  #topbar{overflow-x:auto;overflow-y:hidden;scrollbar-width:none;gap:2px;padding:0 6px}
+  #topbar::-webkit-scrollbar{display:none}
+  .tbtn{padding:0 8px;height:36px}
+  .ddbtn .car{display:inline}
+  #zoomWrap{display:none}
+  .ddmenu .tbtn{height:44px}
+  .ddi{padding:11px 12px}
+}
+@media (max-width:420px){ #fileName,#topbar .logo{display:none} }
+/* phones: the inspector becomes a bottom sheet, and steps aside while you type */
+@media (max-width:860px){
+  body #inspector{top:auto;bottom:36px;left:8px;right:8px;width:auto;max-height:34vh;overflow:auto}
+  body.txediting #inspector{display:none}
+  /* text-edit toolbar: pinned above the status bar, wraps instead of running off-screen */
+  body.txediting #txBar.on{position:fixed;left:8px!important;right:8px;top:auto!important;bottom:36px;flex-wrap:wrap;justify-content:flex-start;z-index:75}
+  #txBar .hint{display:none}
+  #status{gap:10px;padding:0 10px;white-space:nowrap;overflow:hidden}
+  #status #toolHint{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+  #status .priv{margin-left:0}
+}
 /* thumbnail rail */
 #rail{grid-area:rail;background:var(--ink-2);border-right:1px solid var(--hair);overflow-y:auto;padding:12px 0 24px}
 .thumb{width:120px;margin:0 auto 6px;cursor:pointer;border-radius:6px;padding:7px 7px 4px;text-align:center}
@@ -331,7 +396,7 @@ body[data-tool=select] .ov .ed-text,body[data-tool=select] .ov .ed-img{cursor:mo
     <span class="sub">A free, browser-based <b class="br">.PDF</b> editor</span>
   </div>
   <div class="onboard-feats">
-    <span>text editing</span><span>move</span><span>font matching</span><span>watermark removal</span><span>fill &amp; sign</span><b>and more!</b>
+    <span>text editing</span><span>move</span><span>font matching</span><button type="button" class="featgo" id="wmChip" title="Open a PDF and strip its watermark in one click">watermark removal ↗</button><span>fill &amp; sign</span><b>and more!</b>
   </div>
   <div id="dropSheet" role="button" tabindex="0" aria-label="Open a PDF">
     <div class="fauxlines"><i></i><i></i><i></i><i></i></div>
@@ -340,7 +405,7 @@ body[data-tool=select] .ov .ed-text,body[data-tool=select] .ov .ed-img{cursor:mo
     <div class="or">or click to browse — editing starts instantly</div>
   </div>
   <div class="onboard-notes">
-    <span>no account</span><span>no upload — files never leave this device</span><span>free, all features</span>
+    <span>no account</span><span>no upload — files never leave this device</span><span>free, all features</span><span>no OCR: scanned pages stay images</span>
   </div>
   <a id="donateBtn" href="https://buy.stripe.com/fZu8wR3YDde8aKk5cf2sM04" target="_blank" rel="noopener">
     ❤ donate to the “help chad take his family on a vacation for once” fund!
@@ -371,14 +436,28 @@ body[data-tool=select] .ov .ed-text,body[data-tool=select] .ov .ed-img{cursor:mo
     <button class="tbtn tool active" data-tool="select" title="Select & move — click text or objects, drag to smart-select"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 3l7 17 2.5-7L21 10.5z"/></svg><span class="lbl">Select</span><span class="kb">V</span></button>
     <button class="tbtn tool" data-tool="edit" title="Edit text — click any text to rewrite it, font auto-matched"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg><span class="lbl">Edit text</span><span class="kb">E</span></button>
     <button class="tbtn tool" data-tool="text" title="Add text — click where new text should go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6V4h16v2M12 4v16M9 20h6"/></svg><span class="lbl">Add text</span><span class="kb">T</span></button>
-    <button class="tbtn" id="imageBtn" title="Insert image — then drag, resize, or remove its background"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M4.5 19l6-6 4 4 3-3 2 2"/></svg><span class="lbl">Image</span><span class="kb">I</span></button>
     <button class="tbtn" id="signBtn" title="Sign — draw your signature and place it anywhere"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17c3-6 5-9 6-8s-2 7 0 7 3-4 4-4-1 4 1 4 3-3 7-2"/><path d="M3 21h18"/></svg><span class="lbl">Sign</span></button>
     <button class="tbtn tool" data-tool="remove" title="Remove — click text or drag over anything; the gap is filled to match the background"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13l-7 7H6l-3-3 9.5-9.5M13 5l3-3 6 6-3 3"/></svg><span class="lbl">Remove</span><span class="kb">R</span></button>
-    <button class="tbtn tool" data-tool="highlight" title="Highlight — drag over text"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 15l-4 4H3v-2l4-4M14 4l6 6-9 9-6-6z"/></svg><span class="lbl">Highlight</span><span class="kb">H</span></button>
-    <button class="tbtn tool" data-tool="shape" title="Shapes — rectangle, ellipse, line, arrow, freehand draw"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="9" height="9" rx="1"/><circle cx="16.5" cy="16.5" r="4.5"/></svg><span class="lbl">Shapes</span><span class="kb">S</span></button>
-    <div class="tb-sep"></div>
-    <button class="tbtn" id="organizeBtn" title="Organize pages — reorder, rotate, delete, insert, merge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg><span class="lbl">Organize</span><span class="kb">O</span></button>
-    <button class="tbtn" id="findBtn" title="Find in document (Ctrl+F)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.5-4.5"/></svg><span class="lbl">Find</span></button>
+    <div class="tdd" id="wmDD">
+      <button class="tbtn ddbtn" id="wmBtn" aria-haspopup="true" aria-expanded="false" aria-controls="wmMenu" title="Watermark: strip one out in one click, or add your own"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3s6 6.5 6 11a6 6 0 01-12 0c0-4.5 6-11 6-11z"/><path d="M9.5 14.5a2.5 2.5 0 002.5 2.5"/></svg><span class="lbl">Watermark</span><span class="car">▾</span></button>
+      <div class="ddmenu" id="wmMenu" role="menu" aria-label="Watermark">
+        <button class="ddi" id="wmRemoveBtn" role="menuitem"><b>Remove watermark</b><small>one click · DRAFT / CONFIDENTIAL text, watermark layers, stamps</small></button>
+        <button class="ddi" id="wmAddBtn" role="menuitem"><b>Add watermark…</b><small>diagonal text on every page</small></button>
+        <div class="ddnote">Strips the mark out of the file itself. Ctrl+Z brings it back. <b>No OCR:</b> a mark baked into a scanned image needs Remove (R) + a Flattened save.</div>
+      </div>
+    </div>
+    <div class="tdd" id="toolsDD">
+      <button class="tbtn ddbtn" id="toolsBtn" aria-haspopup="true" aria-expanded="false" aria-controls="toolsMenu" title="More tools: image, highlight, shapes, pages, find"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h9M19 6h1M4 12h3M13 12h7M4 18h11M21 18h-1"/><circle cx="16" cy="6" r="2.2"/><circle cx="10" cy="12" r="2.2"/><circle cx="18" cy="18" r="2.2"/></svg><span class="lbl">Tools</span><span class="car">▾</span></button>
+      <div class="ddmenu" id="toolsMenu" role="menu" aria-label="More tools">
+      <button class="tbtn" role="menuitem" id="imageBtn" title="Insert image — then drag, resize, or remove its background"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M4.5 19l6-6 4 4 3-3 2 2"/></svg><span class="lbl">Image</span><span class="kb">I</span></button>
+      <button class="tbtn tool" role="menuitem" data-tool="highlight" title="Highlight — drag over text"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 15l-4 4H3v-2l4-4M14 4l6 6-9 9-6-6z"/></svg><span class="lbl">Highlight</span><span class="kb">H</span></button>
+      <button class="tbtn tool" role="menuitem" data-tool="shape" title="Shapes — rectangle, ellipse, line, arrow, freehand draw"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="9" height="9" rx="1"/><circle cx="16.5" cy="16.5" r="4.5"/></svg><span class="lbl">Shapes</span><span class="kb">S</span></button>
+        <div class="ddsep"></div>
+      <button class="tbtn" role="menuitem" id="organizeBtn" title="Organize pages — reorder, rotate, delete, insert, merge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg><span class="lbl">Organize</span><span class="kb">O</span></button>
+      <button class="tbtn" role="menuitem" id="findBtn" title="Find in document (Ctrl+F)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.5-4.5"/></svg><span class="lbl">Find</span><span class="kb">Ctrl F</span></button>
+        <button class="tbtn" role="menuitem" id="pageNumBtn" title="Number every page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 9h14M5 15h14M10 3L8 21M16 3l-2 18"/></svg><span class="lbl">Page numbers…</span></button>
+      </div>
+    </div>
     <div class="tb-spacer"></div>
     <div id="zoomWrap">
       <button class="tbtn" id="zoomOut" title="Zoom out (−)">−</button>
@@ -502,14 +581,14 @@ body[data-tool=select] .ov .ed-text,body[data-tool=select] .ov .ed-img{cursor:mo
 <!-- NUMBERS & WATERMARK -->
 <div id="stampModal">
   <div class="card">
-    <h2>Page numbers &amp; watermark</h2>
-    <fieldset>
+    <h2 id="stTitle">Page numbers &amp; watermark</h2>
+    <fieldset id="stNumFs">
       <legend>page numbers</legend>
       <div class="fr"><label><input type="checkbox" id="stNumOn" checked> add page numbers</label></div>
       <div class="fr">position <select id="stNumPos"><option value="br">bottom right</option><option value="bc">bottom center</option><option value="bl">bottom left</option><option value="tr">top right</option><option value="tl">top left</option></select>
         start at <input type="number" id="stNumStart" value="1" min="0"> size <input type="number" id="stNumSize" value="10" min="6" max="24"> pt</div>
     </fieldset>
-    <fieldset>
+    <fieldset id="stWmFs">
       <legend>watermark</legend>
       <div class="fr"><label><input type="checkbox" id="stWmOn"> diagonal text</label> <input type="text" id="stWmText" value="DRAFT" maxlength="40"></div>
       <div class="fr">opacity <input type="range" id="stWmOp" min="5" max="60" value="15"> <span id="stWmOpV" style="font-family:var(--mono);font-size:10.5px">15%</span></div>
@@ -521,9 +600,9 @@ body[data-tool=select] .ov .ed-text,body[data-tool=select] .ov .ed-img{cursor:mo
 
 <div id="toasts"></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" integrity="sha384-/1qUCSGwTur9vjf/z9lmu/eCUYbpOTgSjmpbMQZ1/CtX2v/WcAIKqRv+U1DUCG6e" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js" integrity="sha384-weMABwrltA6jWR8DDe9Jp5blk+tZQh7ugpCsF3JwSA53WZM9/14PjS5LAJNHNjAI" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js" integrity="sha384-2p6U+1mmqF10USehFeRiyG2ESG9FwIqN+jxULn5w9jjQIihSn9Pt13dVCn/Hawjn" crossorigin="anonymous"></script>
 <script>
 /* ============================================================================
  * Chadobe Keithrobat (formerly Inkwell PDF Studio) — core engine
@@ -1331,6 +1410,366 @@ body[data-tool=select] .ov .ed-text,body[data-tool=select] .ov .ed-img{cursor:mo
     return fills.concat(rest);
   }
 
+  /* ------------------------------------------------------------------ *
+   * WATERMARK DETECTION + REMOVAL (source level)
+   * stripWatermarks(PDFLib, bytes) -> { changed, bytes, pages:[idx], kinds }
+   * Works on the PDF's own objects, so the removal is real, not a cover:
+   *  - /Watermark annotations, and /Stamp annotations repeated on most pages
+   *  - marked content tagged /Artifact ... /Watermark (Acrobat, Word, etc.)
+   *  - optional-content layers named watermark / draft / confidential / sample
+   *  - diagonal text, and translucent text repeated on most pages
+   *  - translucent images / forms repeated on most pages
+   * Not handled: watermarks baked into scanned page images (no OCR), and
+   * watermarks drawn as vector outlines instead of text.
+   * ------------------------------------------------------------------ */
+  var WM_LAYER_RE = /water\s*mark|draft|confidential|sample|specimen/i;
+
+  function wmLex(s) {
+    var n = s.length, i = 0, ops = [], args = [];
+    function ws(c) { return c === 32 || c === 10 || c === 13 || c === 9 || c === 12 || c === 0; }
+    function delim(c) { return c === 40 || c === 41 || c === 60 || c === 62 || c === 91 || c === 93 || c === 123 || c === 125 || c === 47 || c === 37; }
+    function skip() {
+      while (i < n) {
+        var c = s.charCodeAt(i);
+        if (ws(c)) { i++; continue; }
+        if (c === 37) { while (i < n && s.charCodeAt(i) !== 10 && s.charCodeAt(i) !== 13) i++; continue; }
+        break;
+      }
+    }
+    function value() {
+      skip();
+      if (i >= n) return null;
+      var st = i, c = s[i];
+      if (c === '(') {
+        var depth = 0;
+        for (; i < n; i++) {
+          var ch = s[i];
+          if (ch === '\\') { i++; continue; }
+          if (ch === '(') depth++;
+          else if (ch === ')') { depth--; if (depth === 0) { i++; break; } }
+        }
+        return { t: 'str', s: st, e: i, raw: s.slice(st, i) };
+      }
+      if (c === '<' && s[i + 1] === '<') {
+        i += 2; var kids = [];
+        for (;;) { skip(); if (i >= n) break; if (s[i] === '>' && s[i + 1] === '>') { i += 2; break; } var v = value(); if (!v) break; kids.push(v); }
+        return { t: 'dict', s: st, e: i, raw: s.slice(st, i), kids: kids };
+      }
+      if (c === '<') { var j = s.indexOf('>', i); i = j < 0 ? n : j + 1; return { t: 'str', s: st, e: i, raw: s.slice(st, i) }; }
+      if (c === '[') {
+        i++; var items = [];
+        for (;;) { skip(); if (i >= n) break; if (s[i] === ']') { i++; break; } var v2 = value(); if (!v2) break; items.push(v2); }
+        return { t: 'arr', s: st, e: i, raw: s.slice(st, i), kids: items };
+      }
+      if (c === '/') {
+        i++;
+        while (i < n && !ws(s.charCodeAt(i)) && !delim(s.charCodeAt(i))) i++;
+        return { t: 'name', s: st, e: i, v: s.slice(st, i) };
+      }
+      if (c === ')' || c === '>' || c === ']' || c === '{' || c === '}') { i++; return { t: 'junk', s: st, e: i }; }
+      while (i < n && !ws(s.charCodeAt(i)) && !delim(s.charCodeAt(i))) i++;
+      var w = s.slice(st, i);
+      if (/^[+-]?(\d+\.?\d*|\.\d+)$/.test(w)) return { t: 'num', s: st, e: i, v: parseFloat(w) };
+      return { t: 'op', s: st, e: i, v: w };
+    }
+    while (i < n) {
+      var tok = value();
+      if (!tok) break;
+      if (tok.t !== 'op') { if (tok.t !== 'junk') args.push(tok); continue; }
+      if (tok.v === 'true' || tok.v === 'false' || tok.v === 'null') { args.push(tok); continue; }
+      var start = args.length ? args[0].s : tok.s;
+      if (tok.v === 'BI') {
+        // inline image: skip the binary payload up to a whitespace-delimited EI
+        var idAt = s.indexOf('ID', i), end = n;
+        if (idAt >= 0) {
+          var re = /\sEI(?=[\s\/\[<(]|$)/g; re.lastIndex = idAt + 3;
+          var m = re.exec(s); end = m ? m.index + 3 : n;
+        }
+        i = end;
+        ops.push({ op: 'BI', args: [], s: start, e: end });
+        args = [];
+        continue;
+      }
+      ops.push({ op: tok.v, args: args, s: start, e: tok.e });
+      args = [];
+    }
+    return ops;
+  }
+
+  function wmMul(m, k) {
+    return [m[0] * k[0] + m[1] * k[2], m[0] * k[1] + m[1] * k[3],
+            m[2] * k[0] + m[3] * k[2], m[2] * k[1] + m[3] * k[3],
+            m[4] * k[0] + m[5] * k[2] + k[4], m[4] * k[1] + m[5] * k[3] + k[5]];
+  }
+
+  async function stripWatermarks(PDFLib, bytes, opts) {
+    opts = opts || {};
+    var PN = PDFLib.PDFName, PDict = PDFLib.PDFDict, PArr = PDFLib.PDFArray, PRef = PDFLib.PDFRef;
+    var PNum = PDFLib.PDFNumber, PStr = PDFLib.PDFString, PHex = PDFLib.PDFHexString;
+    var doc = await PDFLib.PDFDocument.load(bytes, { ignoreEncryption: true, updateMetadata: false });
+    var none = { changed: false, bytes: bytes, pages: [], kinds: {} };
+    if (doc.isEncrypted) return Object.assign(none, { encrypted: true });
+    var ctx = doc.context, pages = doc.getPages(), N = pages.length;
+    var kinds = { annotation: 0, artifact: 0, layer: 0, text: 0, image: 0 };
+    var touched = {};
+    function L(o) { return o instanceof PRef ? ctx.lookup(o) : o; }
+    function nameOf(o) { o = L(o); return o instanceof PN ? o.decodeText() : null; }
+    function textOf(o) { o = L(o); return (o instanceof PStr || o instanceof PHex) ? o.decodeText() : null; }
+    function num(o, d) { o = L(o); return o instanceof PNum ? o.asNumber() : d; }
+    function dictOf(o) { o = L(o); if (o instanceof PDict) return o; if (o && o.dict instanceof PDict) return o.dict; return null; }
+    function sub(d, key) { return d ? d.get(PN.of(key)) : undefined; }
+
+    /* ---- optional-content layers that look like watermarks ---- */
+    var wmOCG = new Set();
+    var ocp = dictOf(doc.catalog.get(PN.of('OCProperties')));
+    if (ocp) {
+      var ocgs = L(sub(ocp, 'OCGs'));
+      if (ocgs instanceof PArr) ocgs.asArray().forEach(function (r) {
+        var d = dictOf(r), nm = d && textOf(sub(d, 'Name'));
+        if (nm && WM_LAYER_RE.test(nm) && r instanceof PRef) wmOCG.add(r.toString());
+      });
+    }
+    function isWmOC(o) {
+      if (!o) return false;
+      if (o instanceof PRef && wmOCG.has(o.toString())) return true;
+      var d = dictOf(o);
+      if (!d) return false;
+      if (nameOf(sub(d, 'Type')) === 'OCMD') {
+        var g = L(sub(d, 'OCGs'));
+        if (g instanceof PArr) return g.asArray().some(function (x) { return x instanceof PRef && wmOCG.has(x.toString()); });
+        return g instanceof PRef ? wmOCG.has(g.toString()) : false;
+      }
+      return false;
+    }
+
+    /* ---- pass 1: analyse every page's content ---- */
+    function readContent(page) {
+      var c = page.node.get(PN.of('Contents'));
+      if (!c) return null;
+      var list = L(c) instanceof PArr ? L(c).asArray() : [c];
+      var parts = [];
+      for (var k = 0; k < list.length; k++) {
+        var st = L(list[k]);
+        if (!st) continue;
+        var raw;
+        if (st instanceof PDFLib.PDFRawStream) raw = PDFLib.decodePDFRawStream(st).decode();
+        else if (typeof st.getContents === 'function') raw = st.getContents();
+        else continue;
+        var piece = '';
+        for (var b = 0; b < raw.length; b += 0x8000) piece += String.fromCharCode.apply(null, raw.subarray(b, b + 0x8000));
+        parts.push(piece);
+      }
+      return parts.join('\n');
+    }
+    function resDict(page) { try { return page.node.Resources(); } catch (e) { return null; } }
+
+    function analyse(src, res, ctm0, alpha0, depth) {
+      var ops = wmLex(src), out = { mc: [], text: [], dos: [], bad: false };
+      var gs = { ctm: ctm0.slice(), fa: alpha0 }, stack = [];
+      var mcStack = [], bt = null, tm = [1, 0, 0, 1, 0, 0], tf = { size: 12, font: '' }, tr = 0;
+      var extG = dictOf(res && sub(res, 'ExtGState')), props = dictOf(res && sub(res, 'Properties'));
+      var xobjs = dictOf(res && sub(res, 'XObject'));
+      for (var k = 0; k < ops.length; k++) {
+        var o = ops[k], a = o.args;
+        switch (o.op) {
+          case 'q': stack.push({ ctm: gs.ctm.slice(), fa: gs.fa }); break;
+          case 'Q': if (stack.length) gs = stack.pop(); break;
+          case 'cm':
+            if (a.length === 6) gs.ctm = wmMul(a.map(function (x) { return x.v || 0; }), gs.ctm);
+            break;
+          case 'gs':
+            var g = a[0] && dictOf(extG && sub(extG, a[0].v.slice(1)));
+            if (g) { var ca = num(sub(g, 'ca'), null), CA = num(sub(g, 'CA'), null); if (ca != null || CA != null) gs.fa = Math.min(ca == null ? 1 : ca, CA == null ? 1 : CA); }
+            break;
+          case 'BMC': mcStack.push({ s: o.s, wm: false }); break;
+          case 'BDC':
+            var tag = a[0] && a[0].v, pr = a[1], wm = false, why = '';
+            if (pr && pr.t === 'dict') {
+              if (/\/Subtype\s*\/Watermark\b/.test(pr.raw)) { wm = true; why = 'artifact'; }
+            } else if (pr && pr.t === 'name' && props) {
+              var pref = sub(props, pr.v.slice(1)), pd = dictOf(pref);
+              if (tag === '/OC' && isWmOC(pref)) { wm = true; why = 'layer'; }
+              else if (pd && nameOf(sub(pd, 'Subtype')) === 'Watermark') { wm = true; why = 'artifact'; }
+            }
+            mcStack.push({ s: o.s, wm: wm, why: why });
+            break;
+          case 'EMC':
+            var top = mcStack.pop();
+            if (top && top.wm && !mcStack.some(function (x) { return x.wm; })) out.mc.push({ s: top.s, e: o.e, why: top.why });
+            break;
+          case 'BT': bt = { s: o.s, sig: '', ctm: gs.ctm.slice(), fa: gs.fa, maxSize: 0, diag: false, inv: true }; tm = [1, 0, 0, 1, 0, 0]; break;
+          case 'Tf': if (a.length >= 2) tf = { size: a[1].v || 0, font: a[0].v }; break;
+          case 'Tr': tr = a[0] ? a[0].v : 0; break;
+          case 'Tm': if (a.length === 6) tm = a.map(function (x) { return x.v || 0; }); break;
+          case 'Tj': case 'TJ': case "'": case '"':
+            if (bt) {
+              var m = wmMul(tm, gs.ctm);
+              var eff = Math.abs(tf.size) * Math.sqrt(Math.abs(m[0] * m[3] - m[1] * m[2]));
+              var ang = Math.abs(Math.atan2(m[1], m[0]) * 180 / Math.PI) % 90;
+              bt.maxSize = Math.max(bt.maxSize, eff);
+              if (ang > 15 && ang < 75) bt.diag = true;
+              if (tr !== 3) bt.inv = false;
+              bt.fa = Math.min(bt.fa, gs.fa);
+              bt.sig += Math.round(eff) + ':' + a.map(function (x) { return x.raw || ''; }).join('') + '|';
+            }
+            break;
+          case 'ET':
+            if (bt) { bt.e = o.e; if (bt.sig && !bt.inv) out.text.push(bt); bt = null; }
+            break;
+          case 'Do':
+            var nm = a[0] && a[0].v ? a[0].v.slice(1) : null;
+            var xr = nm && xobjs && sub(xobjs, nm), xs = L(xr), xd = dictOf(xs);
+            if (!xd) break;
+            var st = nameOf(sub(xd, 'Subtype'));
+            var rec = { s: o.s, e: o.e, key: xr instanceof PRef ? xr.toString() : nm, fa: gs.fa, subtype: st, layer: isWmOC(sub(xd, 'OC')), formWm: false };
+            if (st === 'Form' && depth < 2 && !rec.layer) {
+              try {
+                var fsrc = '', raw2 = xs instanceof PDFLib.PDFRawStream ? PDFLib.decodePDFRawStream(xs).decode() : (xs.getContents ? xs.getContents() : new Uint8Array(0));
+                for (var b2 = 0; b2 < raw2.length; b2 += 0x8000) fsrc += String.fromCharCode.apply(null, raw2.subarray(b2, b2 + 0x8000));
+                var fm = L(sub(xd, 'Matrix')), fmat = fm instanceof PArr ? fm.asArray().map(function (x) { return num(x, 0); }) : [1, 0, 0, 1, 0, 0];
+                var inner = analyse(fsrc, dictOf(sub(xd, 'Resources')) || res, wmMul(fmat, gs.ctm), gs.fa, depth + 1);
+                rec.formSig = inner.text.map(function (t) { return t.sig; }).join('');
+                rec.formWm = inner.text.length > 0 && inner.dos.length === 0 && inner.text.every(function (t) { return t.diag && t.maxSize >= 18; });
+                rec.formText = inner.text;
+                if (inner.mc.length) rec.formWm = true;
+              } catch (e) {}
+            }
+            out.dos.push(rec);
+            break;
+        }
+      }
+      return out;
+    }
+
+    var info = [];
+    for (var p = 0; p < N; p++) {
+      var src = null;
+      try { src = readContent(pages[p]); } catch (e) { src = null; }
+      info.push(src == null ? null : { src: src, an: analyse(src, resDict(pages[p]), [1, 0, 0, 1, 0, 0], 1, 0) });
+    }
+
+    /* ---- cross-page repetition counts ---- */
+    var need = Math.max(2, Math.ceil(N * 0.6));
+    var sigPages = {}, doPages = {};
+    info.forEach(function (pi, idx) {
+      if (!pi) return;
+      var seenS = {}, seenD = {};
+      pi.an.text.forEach(function (t) { if (!seenS[t.sig]) { seenS[t.sig] = 1; sigPages[t.sig] = (sigPages[t.sig] || 0) + 1; } });
+      pi.an.dos.forEach(function (d) { if (!seenD[d.key]) { seenD[d.key] = 1; doPages[d.key] = (doPages[d.key] || 0) + 1; } });
+    });
+
+    /* ---- pass 2: cut ---- */
+    for (var q = 0; q < N; q++) {
+      var pi = info[q];
+      if (!pi) continue;
+      var cuts = [];
+      pi.an.mc.forEach(function (m) { cuts.push([m.s, m.e]); kinds[m.why === 'layer' ? 'layer' : 'artifact']++; });
+      pi.an.text.forEach(function (t) {
+        var strong = t.diag && t.maxSize >= 18;
+        var soft = (t.fa < 0.95 && t.maxSize >= 14) || (t.diag && t.maxSize >= 10);
+        if (strong || (soft && N >= 2 && sigPages[t.sig] >= need)) { cuts.push([t.s, t.e]); kinds.text++; }
+      });
+      pi.an.dos.forEach(function (d) {
+        var rep = N >= 2 && doPages[d.key] >= need;
+        if (d.layer) { cuts.push([d.s, d.e]); kinds.layer++; }
+        else if (d.formWm) { cuts.push([d.s, d.e]); kinds.text++; }
+        else if (d.fa <= 0.6 && (rep || N === 1)) { cuts.push([d.s, d.e]); kinds[d.subtype === 'Image' ? 'image' : 'text']++; }
+      });
+      if (!cuts.length) continue;
+      cuts.sort(function (x, y) { return x[0] - y[0]; });
+      var merged = [];
+      cuts.forEach(function (c) {
+        var last = merged[merged.length - 1];
+        if (last && c[0] <= last[1]) last[1] = Math.max(last[1], c[1]); else merged.push(c.slice());
+      });
+      var outS = '', at = 0;
+      merged.forEach(function (c) { outS += pi.src.slice(at, c[0]) + ' '; at = c[1]; });
+      outS += pi.src.slice(at);
+      var ob = new Uint8Array(outS.length);
+      for (var z = 0; z < outS.length; z++) ob[z] = outS.charCodeAt(z) & 255;
+      pages[q].node.set(PN.of('Contents'), ctx.register(ctx.flateStream(ob)));
+      touched[q] = 1;
+    }
+
+    /* ---- annotations ---- */
+    var stampAt = {};
+    var annotsPer = pages.map(function (pg) {
+      var A = L(pg.node.get(PN.of('Annots')));
+      return A instanceof PArr ? A : null;
+    });
+    annotsPer.forEach(function (A) {
+      if (!A) return;
+      var seen = {};
+      A.asArray().forEach(function (r) {
+        var d = dictOf(r);
+        if (!d || nameOf(sub(d, 'Subtype')) !== 'Stamp') return;
+        var rc = L(sub(d, 'Rect')), key = rc instanceof PArr ? rc.asArray().map(function (x) { return Math.round(num(x, 0)); }).join(',') : '';
+        if (!seen[key]) { seen[key] = 1; stampAt[key] = (stampAt[key] || 0) + 1; }
+      });
+    });
+    annotsPer.forEach(function (A, idx) {
+      if (!A) return;
+      var keep = [], dropped = 0;
+      A.asArray().forEach(function (r) {
+        var d = dictOf(r), st = d && nameOf(sub(d, 'Subtype'));
+        var rc = d && L(sub(d, 'Rect')), key = rc instanceof PArr ? rc.asArray().map(function (x) { return Math.round(num(x, 0)); }).join(',') : '';
+        var nm = d && (nameOf(sub(d, 'Name')) || textOf(sub(d, 'NM')) || '');
+        var kill = st === 'Watermark' ||
+          (d && isWmOC(sub(d, 'OC'))) ||
+          (st === 'Stamp' && (WM_LAYER_RE.test(nm || '') || (N >= 2 && stampAt[key] >= need)));
+        if (kill) dropped++; else keep.push(r);
+      });
+      if (dropped) {
+        pages[idx].node.set(PN.of('Annots'), ctx.obj(keep));
+        kinds.annotation += dropped;
+        touched[idx] = 1;
+      }
+    });
+
+    /* ---- hide the layers too, in case something else references them ---- */
+    if (wmOCG.size && ocp) {
+      var D = dictOf(sub(ocp, 'D'));
+      if (D) {
+        var on = L(sub(D, 'ON'));
+        if (on instanceof PArr) D.set(PN.of('ON'), ctx.obj(on.asArray().filter(function (x) { return !(x instanceof PRef && wmOCG.has(x.toString())); })));
+        var off = L(sub(D, 'OFF')), offList = off instanceof PArr ? off.asArray().slice() : [];
+        ocgs.asArray().forEach(function (r) { if (r instanceof PRef && wmOCG.has(r.toString())) offList.push(r); });
+        D.set(PN.of('OFF'), ctx.obj(offList));
+      }
+    }
+
+    var pagesHit = Object.keys(touched).map(Number).sort(function (a2, b3) { return a2 - b3; });
+    if (!pagesHit.length) return none;
+    var outBytes = await doc.save({ useObjectStreams: false, updateFieldAppearances: false });
+    return { changed: true, bytes: outBytes, pages: pagesHit, kinds: kinds };
+  }
+
+  /** Strip identifying metadata from a document about to be saved: Info
+   *  fields, XMP packets, and per-object edit history (/PieceInfo). The only
+   *  thing left is the producer line. */
+  function scrubMetadata(PDFLib, doc, producer) {
+    var PN = PDFLib.PDFName;
+    var info = doc.getInfoDict();
+    ['Title', 'Author', 'Subject', 'Keywords', 'Creator', 'CreationDate', 'ModDate', 'Trapped'].forEach(function (k) { info.delete(PN.of(k)); });
+    info.keys().forEach(function (k) { if (k.asString() !== '/Producer') info.delete(k); });
+    if (producer) info.set(PN.of('Producer'), PDFLib.PDFString.of(producer));
+    doc.catalog.delete(PN.of('Metadata'));
+    doc.catalog.delete(PN.of('PieceInfo'));
+    var doomed = [];
+    doc.context.enumerateIndirectObjects().forEach(function (pair) {
+      var o = pair[1], d = o instanceof PDFLib.PDFDict ? o : (o && o.dict instanceof PDFLib.PDFDict ? o.dict : null);
+      if (!d) return;
+      var ty = d.get(PN.of('Type'));
+      if (ty === PN.of('Metadata') || (d !== info && d.get(PN.of('Author')) && d.get(PN.of('Producer')))) { doomed.push(pair[0]); return; }
+      d.delete(PN.of('PieceInfo'));
+      d.delete(PN.of('LastModified'));
+      if (d !== doc.catalog && d.get(PN.of('Type')) !== PN.of('Metadata')) d.delete(PN.of('Metadata'));
+    });
+    doomed.forEach(function (ref) { doc.context.delete(ref); });
+    doc.context.trailerInfo.ID = undefined;
+    return doc;
+  }
+
   return {
     matchFont: matchFont,
     orderEditIndices: orderEditIndices,
@@ -1355,7 +1794,10 @@ body[data-tool=select] .ov .ed-text,body[data-tool=select] .ov .ed-img{cursor:mo
     parsePageRange: parsePageRange,
     scalePointsToRect: scalePointsToRect,
     fillAndFlattenForms: fillAndFlattenForms,
-    searchItems: searchItems
+    searchItems: searchItems,
+    stripWatermarks: stripWatermarks,
+    scrubMetadata: scrubMetadata,
+    _wmLex: wmLex
   };
 });
 
@@ -1378,7 +1820,20 @@ if (!pdfjs || !window.PDFLib) {
   bootError('Required libraries failed to load. Check your internet connection (cdnjs.cloudflare.com) and reload.');
   return;
 }
-pdfjs.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+// The worker is fetched with an integrity check and run from a local blob, so it
+// is held to the same pinned hash as the <script> tags above.
+var WORKER_URL = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+var WORKER_SRI = 'sha384-SnzOobpRMLXZ52iJvZm/C0fYw0OQemTXzTjIsdsfMcrCtCEe9qgzxTd3RSklO5x2';
+var WORKER = fetch(WORKER_URL, { integrity: WORKER_SRI, mode: 'cors', credentials: 'omit', referrerPolicy: 'no-referrer' })
+  .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.blob(); })
+  .then(function (b) { pdfjs.GlobalWorkerOptions.workerSrc = URL.createObjectURL(new Blob([b], { type: 'text/javascript' })); });
+WORKER.catch(function (err) {
+  bootError('The PDF engine failed its integrity check or could not load (' + (err && err.message || err) + '). Reload the page.');
+});
+async function openPdfjs(bytes) {
+  await WORKER;
+  return pdfjs.getDocument({ data: bytes, useSystemFonts: true, isEvalSupported: false }).promise;
+}
 
 /* ---------------- state ---------------- */
 var S = {
@@ -1442,7 +1897,8 @@ function markDirty() {
 function snapshot() {
   var ed = {};
   for (var k in S.edits) ed[k] = S.edits[k].map(function (e) { return Object.assign({}, e, { rect: Object.assign({}, e.rect) }); });
-  return { entries: S.entries.map(function (e) { return Object.assign({}, e); }), edits: ed };
+  return { entries: S.entries.map(function (e) { return Object.assign({}, e); }), edits: ed,
+           sources: S.sources, srcDocs: S.srcDocs };
 }
 function pushHistory() {
   S.undo.push(snapshot());
@@ -1451,6 +1907,11 @@ function pushHistory() {
   syncHistoryButtons();
 }
 function restore(snap) {
+  if (snap.sources && snap.sources !== S.sources) {
+    // a source-level change (watermark removal) — swap the bytes back
+    S.sources = snap.sources; S.srcDocs = snap.srcDocs;
+    R = {}; thumbCache = {};
+  }
   S.entries = snap.entries;
   S.edits = snap.edits;
   deselect();
@@ -1476,7 +1937,7 @@ function syncHistoryButtons() {
 
 /* ---------------- document loading ---------------- */
 async function loadSource(bytes) {
-  var doc = await pdfjs.getDocument({ data: bytes.slice(), useSystemFonts: true }).promise;
+  var doc = await openPdfjs(bytes.slice());
   S.sources.push(bytes);
   S.srcDocs.push(doc);
   return { srcIdx: S.sources.length - 1, numPages: doc.numPages };
@@ -1513,6 +1974,7 @@ async function openPdfFiles(files, replace) {
     if (!replace) { markDirty(); toast('Merged ' + pdfs.length + ' file' + (pdfs.length > 1 ? 's' : '')); }
     S.fitWidth = true;
     rebuildAll();
+    if (PENDING_WM) { PENDING_WM = false; setTimeout(removeWatermark, 60); }
   } catch (err) {
     var msg = /password/i.test(String(err && err.name) + String(err && err.message))
       ? 'This PDF is password-protected. Unlock it first, then open it here.'
@@ -2144,6 +2606,7 @@ function setTool(t) {
     b.classList.toggle('active', b.dataset.tool === t);
   });
   $('toolHint').textContent = TOOL_HINTS[t] || '';
+  $('toolsBtn').classList.toggle('has-active', !!document.querySelector('#toolsMenu .tbtn.tool.active'));
   $('shapeBar').classList.toggle('on', t === 'shape');
   closeTextEditor(false);
   hideSelBar();
@@ -2769,7 +3232,7 @@ function placeEditor(entry, x, y, w, h) {
   txEl.style.display = 'block';
   txEl.style.left = L + 'px'; txEl.style.top = T + 'px';
   txEl.style.width = w + 'px'; txEl.style.height = h + 'px';
-  txBar.classList.add('on');
+  txBar.classList.add('on'); document.body.classList.add('txediting');
   txBar.style.left = L + 'px';
   txBar.style.top = Math.max(4, T - 46) + 'px';
   autoGrow();
@@ -2925,6 +3388,7 @@ function closeTextEditor(commit) {
   TX = null;
   txEl.style.display = 'none';
   txBar.classList.remove('on');
+  document.body.classList.remove('txediting');
 }
 txEl.addEventListener('input', autoGrow);
 txEl.addEventListener('keydown', function (e) {
@@ -3760,12 +4224,11 @@ async function buildExportBytes(entries) {
       await Core.drawEditsOnPage(PDFLib, doc, doc.getPage(i), ordered, fontCache, { customFonts: customFonts });
     }
   }
-  doc.setProducer('Chadobe Keithrobat Pro CK');
-  doc.setModificationDate(new Date());
+  Core.scrubMetadata(PDFLib, doc, 'Chadobe Keithrobat Pro CK');
   return doc.save({ useObjectStreams: true });
 }
 async function buildFlattenedBytes(stdBytes, onProgress) {
-  var src = await pdfjs.getDocument({ data: stdBytes.slice ? stdBytes.slice(0) : new Uint8Array(stdBytes).slice() }).promise;
+  var src = await openPdfjs(stdBytes.slice ? stdBytes.slice(0) : new Uint8Array(stdBytes).slice());
   var out = await PDFLib.PDFDocument.create();
   for (var p = 1; p <= src.numPages; p++) {
     onProgress && onProgress('flattening page ' + p + ' / ' + src.numPages);
@@ -3784,7 +4247,7 @@ async function buildFlattenedBytes(stdBytes, onProgress) {
     page.drawImage(img, { x: 0, y: 0, width: vp1.width, height: vp1.height });
     c.width = 0; c.height = 0;
   }
-  out.setProducer('Chadobe Keithrobat Pro CK (flattened)');
+  Core.scrubMetadata(PDFLib, out, 'Chadobe Keithrobat Pro CK (flattened)');
   return out.save({ useObjectStreams: true });
 }
 function downloadBytes(bytes, name) {
@@ -4006,6 +4469,7 @@ document.addEventListener('keydown', function (e) {
   if (mod && e.key.toLowerCase() === 'o') { e.preventDefault(); $('fileInput').click(); return; }
   if (typing) return;
   if (e.key === 'Escape') {
+    ddClose();
     cancelEyedrop();
     deselect(); closeTextEditor(false); closeFind();
     $('modal').classList.remove('on');
@@ -4160,7 +4624,7 @@ $('orgRotAll').onclick = function () {
 };
 
 /* ---------------- page numbers & watermark ---------------- */
-$('orgStamp').onclick = function () { $('stampModal').classList.add('on'); };
+$('orgStamp').onclick = function () { openStamp('all'); };
 $('stCancel').onclick = function () { $('stampModal').classList.remove('on'); };
 $('stWmOp').oninput = function () { $('stWmOpV').textContent = $('stWmOp').value + '%'; };
 async function applyStamps(o) {
@@ -4216,6 +4680,140 @@ $('stApply').onclick = async function () {
   toast('Stamped ' + S.entries.length + ' pages — Ctrl+Z undoes all of it');
 };
 
+
+/* ---------------- toolbar dropdowns ---------------- */
+function ddClose(except) {
+  document.querySelectorAll('.tdd.open').forEach(function (d) {
+    if (d === except) return;
+    d.classList.remove('open');
+    d.querySelector('.ddbtn').setAttribute('aria-expanded', 'false');
+  });
+}
+function ddPlace(dd) {
+  var btn = dd.querySelector('.ddbtn'), menu = dd.querySelector('.ddmenu');
+  var b = btn.getBoundingClientRect(), mw = menu.offsetWidth;
+  var left = Math.max(8, Math.min(b.left, window.innerWidth - mw - 8));
+  menu.style.left = left + 'px';
+  menu.style.top = (b.bottom + 6) + 'px';
+}
+function ddItems(dd) { return Array.prototype.slice.call(dd.querySelectorAll('.ddmenu button')); }
+function ddOpen(dd, focusFirst) {
+  ddClose(dd);
+  dd.classList.add('open');
+  dd.querySelector('.ddbtn').setAttribute('aria-expanded', 'true');
+  ddPlace(dd);
+  if (focusFirst) { var it = ddItems(dd)[0]; if (it) it.focus(); }
+}
+document.querySelectorAll('.tdd').forEach(function (dd) {
+  var btn = dd.querySelector('.ddbtn'), menu = dd.querySelector('.ddmenu');
+  btn.addEventListener('click', function (ev) {
+    ev.stopPropagation();
+    if (dd.classList.contains('open')) ddClose(); else ddOpen(dd, ev.detail === 0);
+  });
+  btn.addEventListener('keydown', function (ev) {
+    if (ev.key === 'ArrowDown') { ev.preventDefault(); ddOpen(dd, true); }
+  });
+  menu.addEventListener('keydown', function (ev) {
+    var items = ddItems(dd), at = items.indexOf(document.activeElement);
+    if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') {
+      ev.preventDefault(); ev.stopPropagation();
+      var nx = (at + (ev.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
+      items[nx].focus();
+    } else if (ev.key === 'Escape') {
+      ev.preventDefault(); ev.stopPropagation(); ddClose(); btn.focus();
+    } else if (ev.key === 'Tab') { ddClose(); }
+  });
+  // picking anything closes the menu (the item's own handler runs first)
+  menu.addEventListener('click', function (ev) { if (ev.target.closest('button')) ddClose(); });
+});
+document.addEventListener('pointerdown', function (ev) {
+  if (!ev.target.closest || !ev.target.closest('.tdd')) ddClose();
+}, true);
+window.addEventListener('resize', function () { var o = document.querySelector('.tdd.open'); if (o) ddPlace(o); });
+$('main').addEventListener('scroll', function () { ddClose(); }, { passive: true });
+
+/* ---------------- add watermark / page numbers ---------------- */
+function openStamp(mode) {
+  if (!S.entries.length) return;
+  $('stNumFs').style.display = mode === 'wm' ? 'none' : '';
+  $('stWmFs').style.display = mode === 'num' ? 'none' : '';
+  $('stTitle').textContent = mode === 'wm' ? 'Add a watermark' : mode === 'num' ? 'Page numbers' : 'Page numbers & watermark';
+  if (mode === 'wm') { $('stWmOn').checked = true; $('stNumOn').checked = false; }
+  if (mode === 'num') { $('stNumOn').checked = true; $('stWmOn').checked = false; }
+  $('stampModal').classList.add('on');
+  if (mode === 'wm') setTimeout(function () { $('stWmText').select(); }, 30);
+}
+$('wmAddBtn').onclick = function () { openStamp('wm'); };
+$('pageNumBtn').onclick = function () { openStamp('num'); };
+
+/* ---------------- one-click watermark removal ----------------
+ * Two halves: watermarks this app added (plain edits, just drop them) and
+ * watermarks inside the PDF itself (Core.stripWatermarks rewrites the page
+ * content). The pre-removal bytes ride along in the undo snapshot, so Ctrl+Z
+ * puts the original file back exactly. */
+var PENDING_WM = false, WM_BUSY = false;
+function isOwnWatermark(e) {
+  return e.kind === 'text' && e.angleDeg && e.opacity != null && e.opacity < 1;
+}
+async function removeWatermark() {
+  ddClose();
+  if (!S.entries.length) { PENDING_WM = true; $('fileInput').click(); return; }
+  if (WM_BUSY) return;
+  WM_BUSY = true;
+  var btn = $('wmBtn');
+  btn.classList.add('busy');
+  try {
+    var before = snapshot();
+    var own = 0, edits = {};
+    for (var k in S.edits) {
+      edits[k] = S.edits[k].filter(function (e) { if (isOwnWatermark(e)) { own++; return false; } return true; });
+    }
+    var used = {};
+    S.entries.forEach(function (e) { if (e.src >= 0) used[e.src] = 1; });
+    var sources = S.sources.slice(), docs = S.srcDocs.slice(), hitPages = {}, kinds = {}, enc = false;
+    for (var i = 0; i < S.sources.length; i++) {
+      if (!used[i]) continue;
+      var r;
+      try { r = await Core.stripWatermarks(PDFLib, S.sources[i]); }
+      catch (err) { console.warn('watermark scan failed on source ' + i, err); continue; }
+      if (r.encrypted) enc = true;
+      if (!r.changed) continue;
+      sources[i] = r.bytes;
+      docs[i] = await openPdfjs(r.bytes.slice());
+      for (var kk in r.kinds) kinds[kk] = (kinds[kk] || 0) + r.kinds[kk];
+      S.entries.forEach(function (e) { if (e.src === i && r.pages.indexOf(e.page) >= 0) hitPages[e.id] = 1; });
+    }
+    var srcChanged = sources.some(function (b, j) { return b !== S.sources[j]; });
+    if (own) S.entries.forEach(function (e) {
+      if ((S.edits[e.id] || []).some(isOwnWatermark)) hitPages[e.id] = 1;
+    });
+    if (!own && !srcChanged) {
+      toast(enc
+        ? 'This PDF is encrypted, so its watermark can\u2019t be stripped. Use Remove (R) and drag over it, then save Flattened.'
+        : 'No watermark found. If it\u2019s part of a scanned image (no OCR here), use Remove (R), drag over it, and save Flattened.', true);
+      return;
+    }
+    S.undo.push(before);
+    if (S.undo.length > 60) S.undo.shift();
+    S.redo.length = 0;
+    syncHistoryButtons();
+    S.edits = edits;
+    if (srcChanged) { S.sources = sources; S.srcDocs = docs; R = {}; thumbCache = {}; }
+    markDirty();
+    rebuildAll();
+    var n = Object.keys(hitPages).length;
+    toast('Removed watermark from ' + n + ' page' + (n === 1 ? '' : 's') + ' \u2014 Ctrl+Z puts it back');
+  } catch (err) {
+    toast('Watermark removal failed: ' + (err && err.message || err), true);
+  } finally {
+    WM_BUSY = false;
+    btn.classList.remove('busy');
+  }
+}
+$('wmRemoveBtn').onclick = removeWatermark;
+$('wmChip').onclick = function (ev) { ev.stopPropagation(); PENDING_WM = true; $('fileInput').click(); };
+$('fileInput').addEventListener('cancel', function () { PENDING_WM = false; });
+
 /* expose a test hook (used by the automated browser test harness) */
 window.__inkwell = {
   S: S, R: function () { return R; }, Core: Core,
@@ -4236,7 +4834,8 @@ window.__inkwell = {
   registerCustomFont: registerCustomFont, loadLocalFonts: loadLocalFonts, loadFontFiles: loadFontFiles,
   FONTS: function () { return FONTS; }, AVAIL: function () { return AVAIL; },
   rebuildFontOptions: rebuildFontOptions,
-  sigState: function () { return SIG; }, redrawSig: redrawSig
+  sigState: function () { return SIG; }, redrawSig: redrawSig,
+  removeWatermark: removeWatermark, openStamp: openStamp, ddClose: ddClose
 };
 })();
 </script>

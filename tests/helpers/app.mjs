@@ -4,7 +4,7 @@
 import { createServer } from 'node:http';
 import { readFileSync, existsSync } from 'node:fs';
 import { join, extname, normalize } from 'node:path';
-import { chromium } from 'playwright';
+import { chromium, firefox, webkit, devices } from 'playwright';
 import { ROOT } from './extract.mjs';
 
 const MIME = {
@@ -37,9 +37,19 @@ export function serveRepo() {
   });
 }
 
-/** Launch Chrome. Prefers a system Chrome; falls back to a Playwright download. */
+/**
+ * Launch a browser. Default: Chrome. KEITHROBAT_BROWSER=chromium|firefox|webkit|msedge
+ * picks another engine (webkit is the Safari engine), and KEITHROBAT_DEVICE names a
+ * Playwright device profile (e.g. "iPhone 14", "Pixel 7", "iPad (gen 7)") for
+ * phone/tablet emulation.
+ */
+export const ENGINE = process.env.KEITHROBAT_BROWSER || 'chrome';
+export const DEVICE = process.env.KEITHROBAT_DEVICE || '';
 export async function launch() {
-  const attempts = [
+  if (ENGINE === 'firefox') return firefox.launch();
+  if (ENGINE === 'webkit') return webkit.launch();
+  if (ENGINE === 'msedge') return chromium.launch({ channel: 'msedge', args: ['--no-sandbox', '--disable-dev-shm-usage'] });
+  const attempts = ENGINE === 'chromium' ? [{}] : [
     { channel: 'chrome' },
     { channel: 'chromium' },
     {},
@@ -57,12 +67,22 @@ export async function launch() {
   );
 }
 
+/** Context options for the selected device (desktop 1440x900 by default). */
+export function contextOptions() {
+  if (!DEVICE) return { viewport: { width: 1440, height: 900 } };
+  const d = devices[DEVICE];
+  if (!d) throw new Error(`unknown Playwright device: ${DEVICE}`);
+  const o = { ...d };
+  if (ENGINE === 'firefox') delete o.isMobile;
+  return o;
+}
+
 /**
  * Open the app and wait until its boot has finished (the test hook exists and
  * the toolbar is live).
  */
 export async function openApp(browser, url, { collectConsole = false } = {}) {
-  const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const context = await browser.newContext(contextOptions());
   const page = await context.newPage();
   const messages = [];
   if (collectConsole) {
