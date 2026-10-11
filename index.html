@@ -179,6 +179,18 @@ input,select,textarea{font-family:inherit;color:inherit}
   /* text-edit toolbar: pinned above the status bar, wraps instead of running off-screen */
   body.txediting #txBar.on{position:fixed;left:8px!important;right:8px;top:auto!important;bottom:36px;flex-wrap:wrap;justify-content:flex-start;z-index:75}
   #txBar .hint{display:none}
+  body.txediting #txBar #txBig{display:block;order:-1;flex:1 0 100%;width:100%;min-height:44px;max-height:30vh;font:16px/1.35 var(--sans,system-ui),sans-serif;
+    color:var(--text);background:var(--ink-3);border:1.5px solid var(--teal);border-radius:8px;padding:10px 12px;resize:none;color-scheme:dark}
+  body.txediting #txBar select{flex:1 1 140px;min-width:0;height:40px}
+  body.txediting #txBar input[type=number]{height:40px;width:64px}
+  body.txediting #txBar .tgl,body.txediting #txBar .x{height:40px;min-width:40px}
+  body.txediting #txBar .go{height:40px;padding:0 18px;margin-left:auto}
+  #main #selBar{max-width:calc(100vw - 16px);overflow-x:auto;scrollbar-width:none}
+  #selBar::-webkit-scrollbar{display:none}
+  #main #selBar button{height:38px;padding:0 12px;flex:none}
+  .tbtn.tool.active .lbl{display:inline!important}
+  #status .priv{font-size:0}
+  #status .priv::before{content:"\25CF  local";font-size:11px}
   #status{gap:10px;padding:0 10px;white-space:nowrap;overflow:hidden}
   #status #toolHint{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
   #status .priv{margin-left:0}
@@ -232,6 +244,10 @@ body[data-tool=select] .ov .ed-text,body[data-tool=select] .ov .ed-img{cursor:mo
 #txBar{position:absolute;z-index:51;display:none;background:var(--ink-2);border:1px solid var(--hair);border-radius:10px;
   box-shadow:var(--shadow-pop);padding:6px;display:none;gap:6px;align-items:center}
 #txBar.on{display:flex}
+#txBar select,#txBar select option,#txBar select optgroup{color:var(--text);color-scheme:dark}
+#txBig{display:none}
+#selBar button.primary{background:var(--teal);color:#fff;font-weight:600}
+#selBar button.primary:hover{background:#f04545;color:#fff}
 #txBar select,#txBar input[type=number]{background:var(--ink-3);border:1px solid var(--hair);border-radius:6px;height:28px;padding:0 6px;font-size:12.5px}
 #txBar input[type=number]{width:56px}
 #txBar input[type=color]{width:28px;height:28px;border:none;background:none;padding:0;cursor:pointer}
@@ -477,12 +493,11 @@ body[data-tool=select] .ov .ed-text,body[data-tool=select] .ov .ed-img{cursor:mo
     <div id="handles"><div class="frame"></div><div class="h nw" data-h="nw"></div><div class="h ne" data-h="ne"></div><div class="h sw" data-h="sw"></div><div class="h se" data-h="se"></div></div>
     <textarea id="txEdit" spellcheck="false" rows="1"></textarea>
     <div id="txBar">
+      <textarea id="txBig" rows="1" spellcheck="false" aria-label="Edit text" enterkeyhint="done"></textarea>
       <select id="txFont"><option value="sans">Sans (Helvetica)</option><option value="serif">Serif (Times)</option><option value="mono">Mono (Courier)</option></select>
       <input type="number" id="txSize" min="4" max="200" step="1" value="12" title="Size (pt)">
       <button class="tgl" id="txBold" title="Bold">B</button>
       <button class="tgl" id="txItal" title="Italic" style="font-style:italic">I</button>
-      <button class="tgl" id="txMyFonts" title="Use my computer's fonts (Chrome / Edge — asks permission once)">PC fonts</button>
-      <button class="tgl" id="txLoadFont" title="Load a font file (.ttf / .otf) — works in every browser">+TTF</button>
       <input type="file" id="fontFile" accept=".ttf,.otf" multiple style="display:none">
       <input type="color" id="txColor" value="#111111" title="Text color">
       <span class="hint" id="txHint"></span>
@@ -1857,8 +1872,8 @@ var thumbCache = {};    // key id:rot -> canvas
 var DPR = Math.min(window.devicePixelRatio || 1, 2);
 
 var TOOL_HINTS = {
-  select: 'click text or an object · drag objects to move · drag empty space to smart-select',
-  edit: 'click any text to rewrite it — font, size and color are matched automatically',
+  select: 'double-click text to edit · drag to move · drag empty space to select',
+  edit: 'click any text to rewrite it · click away or Enter to apply · Esc cancels',
   text: 'click where the new text should start',
   remove: 'click text, or drag over anything — the gap is filled to match the background',
   highlight: 'drag across text to highlight',
@@ -2605,10 +2620,12 @@ function setTool(t) {
   document.querySelectorAll('.tbtn.tool').forEach(function (b) {
     b.classList.toggle('active', b.dataset.tool === t);
   });
-  $('toolHint').textContent = TOOL_HINTS[t] || '';
+  var hint = TOOL_HINTS[t] || '';
+  if (isPhone()) hint = hint.replace('double-click text', 'tap text twice');
+  $('toolHint').textContent = hint;
   $('toolsBtn').classList.toggle('has-active', !!document.querySelector('#toolsMenu .tbtn.tool.active'));
   $('shapeBar').classList.toggle('on', t === 'shape');
-  closeTextEditor(false);
+  closeTextEditor(true);
   hideSelBar();
   if (t !== 'select') deselect();
 }
@@ -2632,6 +2649,7 @@ $('pages').addEventListener('pointerdown', function (ev) {
   if (!entry || !R[entry.id].rendered) return;
   var pt = pagePoint(entry, ev);
   var tool = S.tool;
+  if (TX) closeTextEditor(true);   // clicking anywhere else on the page applies the open edit
 
   // overlay object hit (added text / image) — always selectable+draggable in select tool
   var ovHit = ev.target.closest && ev.target.closest('.ov > *');
@@ -2639,8 +2657,11 @@ $('pages').addEventListener('pointerdown', function (ev) {
     var ei = +ovHit.dataset.ei;
     var keepGroup = S.selected && S.selected.group && S.selected.entryId === entry.id &&
                     S.selected.group.indexOf(ei) !== -1;
+    var wasPicked = !keepGroup && S.selected && S.selected.entryId === entry.id && S.selected.editIdx === ei;
     if (!keepGroup) selectEdit(entry, ei);
-    startObjectDrag(entry, ei, pt, ev);
+    var tapEdit = wasPicked && (S.edits[entry.id][ei] || {}).kind === 'text'
+      ? function () { reopenTextEdit(entry, ei); } : null;
+    startObjectDrag(entry, ei, pt, ev, tapEdit);
     ev.preventDefault();
     return;
   }
@@ -2649,7 +2670,7 @@ $('pages').addEventListener('pointerdown', function (ev) {
   if (tlHit && consumedItemSet(entry.id)[+tlHit.dataset.i]) tlHit = null;
   if (tlHit) {
     var item = R[entry.id].items[+tlHit.dataset.i];
-    if (tool === 'edit') { openTextEditorFor(entry, item); ev.preventDefault(); return; }
+    if (tool === 'edit') { openTextEditorFor(entry, item, pt); ev.preventDefault(); return; }
     if (tool === 'remove') { removeRects(entry, [padTextRect(item)]); ev.preventDefault(); return; }
     if (tool === 'highlight') { addHighlight(entry, item.pdfRect); ev.preventDefault(); return; }
     if (tool === 'select') {
@@ -3045,10 +3066,10 @@ function showSelBarFor(entry, cssRect, idxs, marqueeRect) {
   bar.innerHTML = '';
   var single = idxs.length === 1;
   var acts = [
+    single ? ['Edit', function () { hideSelBar(); openTextEditorFor(entry, R[entry.id].items[idxs[0]]); }, 'primary'] : null,
     ['Copy', function () {
       navigator.clipboard.writeText(selectedText(entry, idxs)).then(function () { toast('Copied'); });
     }],
-    single ? ['Edit', function () { hideSelBar(); openTextEditorFor(entry, R[entry.id].items[idxs[0]]); }] : null,
     ['Move', function () {
       pushHistory();
       var lifted = idxs.map(function (i) { return liftTextItem(entry, R[entry.id].items[i]); });
@@ -3093,8 +3114,11 @@ function showSelBarFor(entry, cssRect, idxs, marqueeRect) {
   var pageBox = R[entry.id].el.getBoundingClientRect();
   var mainBox = $('main').getBoundingClientRect();
   bar.classList.add('on');
-  bar.style.left = (pageBox.left - mainBox.left + $('main').scrollLeft + cssRect.x) + 'px';
-  bar.style.top = Math.max(4, pageBox.top - mainBox.top + $('main').scrollTop + cssRect.y - 40) + 'px';
+  var main = $('main');
+  var left = pageBox.left - mainBox.left + main.scrollLeft + cssRect.x;
+  var maxLeft = main.scrollLeft + main.clientWidth - bar.offsetWidth - 8;
+  bar.style.left = Math.max(main.scrollLeft + 8, Math.min(left, maxLeft)) + 'px';
+  bar.style.top = Math.max(4, pageBox.top - mainBox.top + main.scrollTop + cssRect.y - bar.offsetHeight - 6) + 'px';
 }
 function hideSelBar() { $('selBar').classList.remove('on'); }
 
@@ -3118,6 +3142,12 @@ function startTextDragOrSelect(entry, item, pt, ev, additive) {
     ghost.style.top = (cur.y - (startPt.y - item.cssY)) + 'px';
   }, function (e) {
     if (!moved) {
+      if (!additive && S.selected && S.selected.entryId === entry.id && S.selected.textIdxs &&
+          S.selected.textIdxs.length === 1 && S.selected.textIdxs[0] === item.idx) {
+        hideSelBar(); deselect();
+        openTextEditorFor(entry, item, startPt);
+        return;
+      }
       var idxs = [item.idx];
       if (additive && S.selected && S.selected.textIdxs && S.selected.entryId === entry.id) {
         var cur = S.selected.textIdxs.slice();
@@ -3189,8 +3219,8 @@ function addHighlight(entry, pdfRect, quiet) {
 var TX = null; // {entry, item|null, mode:'replace'|'new', match, colors, cssPos}
 var txEl = $('txEdit'), txBar = $('txBar');
 
-function openTextEditorFor(entry, item) {
-  closeTextEditor(false);
+function openTextEditorFor(entry, item, clickPt) {
+  closeTextEditor(true);
   var m = Core.matchFont(item.fontName);
   var colors = sampleTextColors(entry, item);
   TX = { entry: entry, item: item, mode: 'replace', match: m };
@@ -3204,11 +3234,53 @@ function openTextEditorFor(entry, item) {
       : Core.cleanFontName(item.fontName) + ' \u2192 ' + m.std);
   if (m.confidence < 0.65) $('txHint').style.color = 'var(--amber)';
   else $('txHint').style.color = '';
-  txEl.focus(); txEl.select();
+  setTxText(item.str);
+  TX.orig = txSignature();
+  var caret = clickPt ? caretIndexAt(item, clickPt.x) : -1;
+  focusEditor(caret);
   autoMatchCustom();
 }
+/** Character index nearest a click x (page CSS px) inside a text run. */
+function caretIndexAt(item, x) {
+  measureCtx.font = txEl.style.font;
+  var total = measureCtx.measureText(item.str).width || 1;
+  var k = item.cssW > 0 ? item.cssW / total : 1;
+  var rel = x - item.cssX, best = item.str.length;
+  for (var i = 0; i <= item.str.length; i++) {
+    var w = measureCtx.measureText(item.str.slice(0, i)).width * k;
+    if (w >= rel) {
+      var prev = i > 0 ? measureCtx.measureText(item.str.slice(0, i - 1)).width * k : 0;
+      best = (i > 0 && rel - prev < w - rel) ? i - 1 : i;
+      break;
+    }
+  }
+  return Math.max(0, Math.min(item.str.length, best));
+}
+function setTxText(t) { txEl.value = t; $('txBig').value = t; autoGrow(); }
+function txSignature() {
+  var st = currentTxStyle();
+  return JSON.stringify([txEl.value, st.std, st.size, st.color]);
+}
+/** Desktop types straight into the page; phones get a full-size field in the bottom bar
+ *  (16px so iOS doesn't zoom, and you can actually see what you type). */
+function focusEditor(caret) {
+  var big = $('txBig');
+  var target = isPhone() ? big : txEl;
+  if (isPhone()) {
+    try { txEl.scrollIntoView({ block: 'center', behavior: 'instant' }); } catch (e) { txEl.scrollIntoView(); }
+  }
+  target.focus({ preventScroll: true });
+  if (caret == null || caret < 0) target.select();
+  else target.setSelectionRange(caret, caret);
+  autoGrowBig();
+}
+function autoGrowBig() {
+  var big = $('txBig');
+  big.style.height = 'auto';
+  big.style.height = Math.max(44, big.scrollHeight + 2) + 'px';
+}
 function openNewTextEditor(entry, pt) {
-  closeTextEditor(false);
+  closeTextEditor(true);
   var m = Core.matchFont('Helvetica');
   var sizePt = Math.max(10, Math.round(14));
   TX = { entry: entry, item: null, mode: 'new', match: m, at: pt };
@@ -3217,7 +3289,9 @@ function openNewTextEditor(entry, pt) {
   styleEditor(fontPx, m, '#111111', '#ffffff');
   placeEditor(entry, pt.x, pt.y - fontPx * 0.7, 220, fontPx * 1.3);
   seedTxBar(m, sizePt, '#111111', 'new text');
-  txEl.focus();
+  setTxText('');
+  TX.orig = txSignature();
+  focusEditor(0);
 }
 function styleEditor(fontPx, m, ink, bg) {
   txEl.style.font = (m.italic ? 'italic ' : '') + (m.bold ? '700 ' : '400 ') + fontPx + 'px ' + m.css;
@@ -3266,7 +3340,14 @@ function rebuildFontOptions(selectValue) {
     });
     if (g2.children.length) sel.appendChild(g2);
   }
+  var g3 = document.createElement('optgroup'); g3.label = 'More fonts';
+  if (window.queryLocalFonts && !Object.keys(AVAIL).length) {
+    var o1 = document.createElement('option'); o1.value = 'act:pc'; o1.textContent = '+ Use my computer\u2019s fonts\u2026'; g3.appendChild(o1);
+  }
+  var o2 = document.createElement('option'); o2.value = 'act:ttf'; o2.textContent = '+ Load a font file (.ttf/.otf)\u2026'; g3.appendChild(o2);
+  sel.appendChild(g3);
   if (selectValue) sel.value = selectValue;
+  sel.dataset.prev = sel.value;
   syncStyleToggles();
 }
 /** Custom font files carry their own weight/slant — the B/I toggles only apply
@@ -3328,8 +3409,11 @@ function autoGrow() {
 }
 function commitTextEditor() {
   if (!TX) return;
+  if (!TX.reopened && TX.orig && txSignature() === TX.orig) { closeTextEditor(false); return; }   // nothing changed
+  if (TX.mode === 'new' && !txEl.value.trim() && !TX.reopened) { closeTextEditor(false); return; }
   var entry = TX.entry, st = currentTxStyle(), text = txEl.value.replace(/\s+$/, '');
-  pushHistory();
+  TX.committing = true;
+  if (!TX.reopened) pushHistory();
   S.edits[entry.id] = S.edits[entry.id] || [];
   if (TX.mode === 'replace') {
     var item = TX.item;
@@ -3385,21 +3469,46 @@ function pushTextEdit(entry, rect, text, sizePt, styleLike, bold, italic, color,
 }
 function closeTextEditor(commit) {
   if (commit && TX) { commitTextEditor(); return; }
+  var wasReopenCancel = TX && TX.reopened && !TX.committing;
   TX = null;
+  if (wasReopenCancel) { doUndo(); S.redo.pop(); syncHistoryButtons(); }
   txEl.style.display = 'none';
   txBar.classList.remove('on');
   document.body.classList.remove('txediting');
 }
-txEl.addEventListener('input', autoGrow);
-txEl.addEventListener('keydown', function (e) {
+txEl.addEventListener('input', function () { $('txBig').value = txEl.value; autoGrow(); });
+$('txBig').addEventListener('input', function () { txEl.value = $('txBig').value; autoGrow(); autoGrowBig(); });
+function txKeys(e) {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); commitTextEditor(); }
   else if (e.key === 'Escape') { e.preventDefault(); closeTextEditor(false); }
   e.stopPropagation();
-});
+}
+txEl.addEventListener('keydown', txKeys);
+$('txBig').addEventListener('keydown', txKeys);
+// phones: keep the edit bar above the on-screen keyboard
+if (window.visualViewport) {
+  var vvSync = function () {
+    var vv = window.visualViewport;
+    var kb = Math.max(0, window.innerHeight - (vv.height + vv.offsetTop));
+    txBar.style.bottom = (isPhone() && kb > 60) ? (kb + 8) + 'px' : '';
+  };
+  window.visualViewport.addEventListener('resize', vvSync);
+  window.visualViewport.addEventListener('scroll', vvSync);
+}
 $('txApply').onclick = commitTextEditor;
 $('txCancel').onclick = function () { closeTextEditor(false); };
 $('txFont').onchange = async function () {
   var v = $('txFont').value;
+  if (v.indexOf('act:') === 0) {
+    $('txFont').value = $('txFont').dataset.prev || 'sans';
+    if (v === 'act:ttf') { $('fontFile').click(); return; }
+    try {
+      var n = await loadLocalFonts();
+      if (n) { rebuildFontOptions($('txFont').value); toast(n + ' computer fonts added to the font menu'); autoMatchCustom(); }
+    } catch (err) { toast('Font access was blocked \u2014 pick \u201cLoad a font file\u201d instead.', true); }
+    return;
+  }
+  $('txFont').dataset.prev = v;
   if (v.indexOf('avail:') === 0) {
     var id = await ensureAvailFont(v.slice(6));
     rebuildFontOptions(id ? 'custom:' + id : 'sans');
@@ -3407,17 +3516,6 @@ $('txFont').onchange = async function () {
   syncStyleToggles();
   restyleEditorFromBar();
 };
-$('txMyFonts').onclick = async function () {
-  try {
-    var n = await loadLocalFonts();
-    if (n) {
-      rebuildFontOptions($('txFont').value);
-      toast(n + ' computer fonts available in the font menu');
-      autoMatchCustom();
-    }
-  } catch (err) { toast('Font access was blocked \u2014 you can still load files with +TTF.', true); }
-};
-$('txLoadFont').onclick = function () { $('fontFile').click(); };
 $('fontFile').addEventListener('change', function () { loadFontFiles([].slice.call($('fontFile').files)); $('fontFile').value = ''; });
 async function loadFontFiles(files) {
   var lastId = null;
@@ -3459,6 +3557,7 @@ async function autoMatchCustom() {
     rebuildFontOptions('custom:' + id);
     restyleEditorFromBar();
     $('txHint').textContent = 'matched to YOUR font: ' + FONTS.byId[id].family;
+    TX.orig = txSignature();
   }
 }
 $('txSize').oninput = restyleEditorFromBar;
@@ -3578,7 +3677,7 @@ function positionHandles() {
   h.style.top = (pageBox.top - mainBox.top + $('main').scrollTop + cr.y) + 'px';
   h.style.width = cr.w + 'px'; h.style.height = cr.h + 'px';
 }
-function startObjectDrag(entry, editIdx, startPt, ev) {
+function startObjectDrag(entry, editIdx, startPt, ev, onTap) {
   // group drag: if the grabbed edit belongs to the active group, all members
   // travel with it by the same delta
   var group = (S.selected && S.selected.group && S.selected.entryId === entry.id &&
@@ -3616,7 +3715,7 @@ function startObjectDrag(entry, editIdx, startPt, ev) {
       group.forEach(function (i) { S.edits[entry.id][i] = finals[i]; });
       refreshEntryOverlay(entry.id);
       markDirty();
-    }
+    } else if (onTap) { onTap(); return; }
     positionHandles();
   });
 }
@@ -3751,25 +3850,30 @@ function showEditInspector(entry, editIdx) {
   if ($('insRotL')) $('insRotL').onclick = function () { rot(90); };
   if ($('insRotR')) $('insRotR').onclick = function () { rot(-90); };
   var editTx = $('insEditTx');
-  if (editTx) editTx.onclick = function () {
-    // reopen editor seeded with this edit, then replace it
-    var cr = pdfRectToCss(entry, e.rect);
-    pushHistory();
-    S.edits[entry.id].splice(editIdx, 1);
-    deselect(); refreshEntryOverlay(entry.id);
-    setTool('text');
-    openNewTextEditor(entry, { x: cr.x, y: cr.y + cr.h * 0.7 });
-    txEl.value = e.text;
-    var m = fontCssFor(e.font);
-    rebuildFontOptions(e.font.indexOf('custom:') === 0 ? e.font
-      : /Courier/.test(e.font) ? 'mono' : /Times/.test(e.font) ? 'serif' : 'sans');
-    $('txBold').classList.toggle('on', m.bold);
-    $('txItal').classList.toggle('on', m.italic);
-    $('txSize').value = Math.round(e.size * 10) / 10;
-    $('txColor').value = e.color || '#111111';
-    restyleEditorFromBar();
-  };
+  if (editTx) editTx.onclick = function () { reopenTextEdit(entry, editIdx); };
 }
+/** Reopen an added/moved text edit in the editor; applying replaces it, Esc restores it. */
+function reopenTextEdit(entry, editIdx) {
+  var e = S.edits[entry.id][editIdx];
+  if (!e || e.kind !== 'text') return;
+  var cr = pdfRectToCss(entry, e.rect);
+  pushHistory();
+  S.edits[entry.id].splice(editIdx, 1);
+  deselect(); refreshEntryOverlay(entry.id);
+  openNewTextEditor(entry, { x: cr.x, y: cr.y + cr.h * 0.7 });
+  TX.reopened = true;
+  setTxText(e.text);
+  var m = fontCssFor(e.font);
+  rebuildFontOptions(e.font.indexOf('custom:') === 0 ? e.font
+    : /Courier/.test(e.font) ? 'mono' : /Times/.test(e.font) ? 'serif' : 'sans');
+  $('txBold').classList.toggle('on', m.bold);
+  $('txItal').classList.toggle('on', m.italic);
+  $('txSize').value = Math.round(e.size * 10) / 10;
+  $('txColor').value = e.color || '#111111';
+  restyleEditorFromBar();
+  TX.orig = txSignature();
+}
+function isPhone() { return window.matchMedia('(max-width:860px)').matches; }
 function showTextInspector(entry, idxs) {
   var el = $('inspector');
   var items = R[entry.id].items;
@@ -3785,7 +3889,7 @@ function showTextInspector(entry, idxs) {
     html += '<div class="note">Copy, highlight, or remove the selection with the floating bar.</div>';
   }
   el.innerHTML = html;
-  el.classList.add('on');
+  if (!isPhone()) el.classList.add('on');   // informational only; on a phone the sheet just covers the page
 }
 
 /* ===== shared image-edit placement (used by insert + signature) ===== */
@@ -4038,17 +4142,17 @@ var rezoom = debounce(function () { S.fitWidth = false; buildShells(); }, 160);
 function setZoom(z) {
   S.zoom = Math.max(0.25, Math.min(4, z));
   $('zoomPct').textContent = Math.round(S.zoom * 100) + '%';
-  closeTextEditor(false); deselect();
+  closeTextEditor(true); deselect();
   rezoom();
 }
 $('zoomIn').onclick = function () { setZoom(S.zoom * 1.2); };
 $('zoomOut').onclick = function () { setZoom(S.zoom / 1.2); };
-$('zoomFit').onclick = function () { S.fitWidth = true; closeTextEditor(false); deselect(); buildShells(); };
+$('zoomFit').onclick = function () { S.fitWidth = true; closeTextEditor(true); deselect(); buildShells(); };
 
 /* ---------------- organize pages ---------------- */
 var orgDirty = false;
 function openOrganize() {
-  deselect(); closeTextEditor(false);
+  closeTextEditor(true); deselect();
   orgDirty = false;
   $('organize').classList.add('on');
   buildOrganizeGrid();
@@ -4260,6 +4364,7 @@ function downloadBytes(bytes, name) {
   setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
 }
 $('exportBtn').onclick = function () {
+  closeTextEditor(true);
   if (!S.entries.length) return;
   $('expRange').value = 'all';
   var fv = S.formValues || {};
@@ -4464,7 +4569,7 @@ document.addEventListener('keydown', function (e) {
   var mod = e.ctrlKey || e.metaKey;
   if (mod && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? doRedo() : doUndo(); return; }
   if (mod && e.key.toLowerCase() === 'y') { e.preventDefault(); doRedo(); return; }
-  if (mod && e.key.toLowerCase() === 's') { e.preventDefault(); if (S.entries.length) $('modal').classList.add('on'); return; }
+  if (mod && e.key.toLowerCase() === 's') { e.preventDefault(); closeTextEditor(true); if (S.entries.length) $('modal').classList.add('on'); return; }
   if (mod && e.key.toLowerCase() === 'f') { e.preventDefault(); openFind(); return; }
   if (mod && e.key.toLowerCase() === 'o') { e.preventDefault(); $('fileInput').click(); return; }
   if (typing) return;
@@ -4553,7 +4658,7 @@ $('dropSheet').addEventListener('keydown', function (e) { if (e.key === 'Enter' 
 
 /* deselect when clicking felt */
 $('main').addEventListener('pointerdown', function (e) {
-  if (e.target === $('main') || e.target === $('pages')) { deselect(); closeTextEditor(false); }
+  if (e.target === $('main') || e.target === $('pages')) { deselect(); closeTextEditor(true); }
 });
 window.addEventListener('beforeunload', function (e) {
   if (S.dirty) { e.preventDefault(); e.returnValue = ''; }
